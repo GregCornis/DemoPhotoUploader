@@ -5,6 +5,17 @@ import { Tensor } from 'onnxruntime-web';
 import * as ort from 'onnxruntime-web';
 import { useState } from "react";
 
+
+class UploadData {
+  name: string;
+  numberOfPictures: number;
+
+  constructor(campaign: string, files: [File]) {
+    this.name = Temporal.Now.instant().toString() + + "_" + campaign;
+    this.numberOfPictures = files.length;
+  }
+}
+
 export default function Home() {
   const [files, setFiles] = useState([]);
   const [mask, setMask] = useState(undefined);
@@ -12,29 +23,64 @@ export default function Home() {
   const [analysisResults, setAnalysisResults] = useState([]);
 
   return (
-    <div className="">
+    <div className='main'>
 
-      <h1>File uploader</h1>
-
-      <Upload setFiles={setFiles} />
-
-      {
-        files.length ? <PreviewFolder files={files} analysisResults={analysisResults} /> : <></>
-      }
-
-      <div className="actions">
-        <button className="analyse-button" onClick={() => runAnalysis(files, setMask, setLoading, setAnalysisResults)} >Analyse</button>
-        <button className="upload-button">Upload</button>
+      <div className='top'>
+        <h1 className='grow'>My uploads</h1>
+        <button className='new'>+ New</button>
       </div>
-
-      <img src={mask} width="100"/>
-
-      <Loader show={loading} />
-
-      <AnalysisResults analysisResults={analysisResults}/>
-
+      
+      <UploadRow name='20250521_Baltic_eagle' percent={100} n_pictures={512} expand={false}/>
+      <UploadRow name='20250521_Arcadis' percent={100} n_pictures={63420} expand={false}/>
+      <UploadRow name='20250521_Arcadis' percent={43} n_pictures={2432} expand={true}/>
     </div>
   );
+}
+
+function UploadRow({name, percent, n_pictures, expand}) {
+  return <div className='upload-row flex flex-col'>
+    <div className='flex flex-row items-center w-full'>
+      <div className='title'>{name}</div>
+      <div className='pic'>{n_pictures} pictures</div>
+      <LoadingBar percent={percent}/>
+    </div>
+    {
+      expand ? <AnalysisPreview n_pictures={n_pictures} /> : <></>
+    }
+  </div>
+}
+
+function LoadingBar({percent}) {
+  return  <div className='flex flex-row items-center grow'>
+            <div className='loading-bar'>
+              <div className='done' style={{width: percent + '%'}} />
+            </div>
+            <div className='m-2' >{percent} %</div>
+          </div>
+}
+
+function AnalysisPreview({n_pictures}) {
+  return <div className='preview'>
+    <div className='tags'>
+      <div className='tag all'>{n_pictures} <b>All</b></div>
+      <div className='tag ok'>1231 <b>Ok</b></div>
+      <div className='tag under-exposed'>412 <b>Under-exposed</b></div>
+      <div className='tag over-exposed'>512 <b>Over-exposed</b></div>
+      <div className='tag analyzing'>1231 <b>Analysing..</b></div>
+    </div>
+    <div className='imagesGrid'>
+      {[...Array(20)].map((x, i) =>
+    
+      <div className='img-preview' >
+        <img src='/sample.JPG' loading="lazy"  />
+            <div className='okey'>ok</div>
+            Bla.JPG
+      </div>
+    
+    )} 
+    
+    </div>
+  </div>
 }
 
 function PreviewImage({file, analysis}) {
@@ -45,7 +91,7 @@ function PreviewImage({file, analysis}) {
   } else {
     if (analysis.overExposed) { c = "overExposed"; }
     else if (analysis.underExposed) { c = "underExposed"}
-    else { c = "ok"; }
+    else { c = "okey"; }
   }
 
   return  <li key={file.webkitRelativePath} className="imgPreview">
