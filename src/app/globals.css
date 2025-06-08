@@ -120,18 +120,20 @@ h1 {
   position: absolute;
 }
 
-.preview {
- 
+.tag.disabled {
+  border-width: 2px;
+  opacity: 0.5;
 }
+
 
 .upload {
   padding: 1em;
-  margin: 1em 2.5%;
+  margin: 1em 0;
   border-radius: 0.5em;
   border-style: dashed;
   border-width: 3;
   border-color: #bcbaba;
-  width: 95%;
+  min-width: 25em;
 }
 
 .imgPreview {
@@ -218,14 +220,21 @@ h1 {
 }
 
 .floating {
-  position: absolute;
-  width: 90vw;
-  height: 90vh;
-  margin: 5vh 5vw;
-  background-color: #d3d3d3;
+  position: fixed;
+  background-color: #f0f0f0;
   border-radius: 1em;
-  padding: 1em;
+  padding: 2em;
   z-index: 1;
+  box-shadow: rgba(0, 0, 0, 0.35) 0px 2px 5px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.text-input {
+  border-color: black;
+  border-width: 1px;
+  background-color: white;
 }
 
 .cancel {

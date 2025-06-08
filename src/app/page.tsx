@@ -22,7 +22,7 @@ class UploadData {
   static new(campaign: string, files: [File]): UploadData {
     return new UploadData(
       Temporal.Now.instant().toString() + "_" + campaign,
-      files,
+      files.toSorted((a, b) => b.name < a.name ? 1 : -1),
       100
     );
   }
@@ -46,15 +46,20 @@ class Analysis {
     this.overExposed = overExposed;
     this.underExposed = underExposed;
   }
+
+  get ok(): Boolean {
+    return !this.overExposed && !this.underExposed;
+  }
 }
 
 export default function Home() {
   const [mask, setMask] = useState(undefined);
   const [uploads, setUploads] = useState([]);
   const [showNewUpload, setShowNewUpload] = useState(false);
+  const [filters, setFilters] = useState({ ok: true, overExposed: false, underExposed: false, analyzing: false });
 
   let uploadsView = uploads.map((u) => {
-    return <UploadRow upload={u}/>;
+    return <UploadRow upload={u} filters={filters} setFilters={setFilters} />;
   });
   if (!uploads.length) {
     uploadsView = <em>No uploads yet</em>;
@@ -68,20 +73,20 @@ export default function Home() {
         <button className='new' onClick={() => setShowNewUpload(true)}>+ New</button>
 
 
-        {showNewUpload ? 
-        <NewUpload 
-          setNewUpload={(up) => {
-            console.log("New upload", up);
-            setUploads(uploads.concat([up]));
-            setShowNewUpload(false);
-            runAnalysis(up.files, () => {}, 
-            (res) => {
-              const newUp = up.updateAnalysis(res);
-              console.log("Setting uploads", newUp)
-              setUploads([newUp]);  // TODO only one in list
-            })
-          }} 
-          cancel={() => setShowNewUpload(false)}/> 
+        {showNewUpload ?
+          <NewUpload
+            setNewUpload={(up) => {
+              console.log("New upload", up);
+              setUploads(uploads.concat([up]));
+              setShowNewUpload(false);
+              runAnalysis(up.files, () => { },
+                (res) => {
+                  const newUp = up.updateAnalysis(res);
+                  console.log("Setting uploads", newUp)
+                  setUploads([newUp]);  // TODO only one in list
+                })
+            }}
+            cancel={() => setShowNewUpload(false)} />
           : <></>}
       </div>
 
@@ -90,29 +95,38 @@ export default function Home() {
   );
 }
 
-function UploadRow({upload}: {upload: UploadData}) {
+function UploadRow({ upload, filters, setFilters }: { upload: UploadData, filters: any, setFilters: () => void }) {
   return <div className='upload-row flex flex-col'>
     <div className='flex flex-row items-center w-full'>
       <div className='title'>{upload.name}</div>
       <div className='pic'>{upload.number_pictures} pictures</div>
-      <LoadingBar percent={upload.percent}/>
+      <LoadingBar percent={upload.percent} />
     </div>
     {
-      true ? <AnalysisPreview files={upload.files} analysis={upload.analysis || []} /> : <></>
+      true ? <AnalysisPreview files={upload.files} analysis={upload.analysis || []} filters={filters} setFilters={setFilters} /> : <></>
     }
   </div>
 }
 
-function LoadingBar({percent}) {
-  return  <div className='flex flex-row items-center grow'>
-            <div className='loading-bar'>
-              <div className='done' style={{width: percent + '%'}} />
-            </div>
-            <div className='m-2' >{percent} %</div>
-          </div>
+function LoadingBar({ percent }) {
+  return <div className='flex flex-row items-center grow'>
+    <div className='loading-bar'>
+      <div className='done' style={{ width: percent + '%' }} />
+    </div>
+    <div className='m-2' >{percent} %</div>
+  </div>
 }
 
-function AnalysisPreview({files, analysis}) {
+function Tag({ name, number, onClick, enabled }) {
+  const enabledClass = enabled ? '' : 'disabled';
+  return <div
+    className={'tag ' + name + ' ' + enabledClass}
+    onClick={onClick}>
+    {number} <b>{name}</b>
+  </div>
+}
+
+function AnalysisPreview({ files, analysis, filters, setFilters }) {
   console.log("Repainting analysis", analysis);
 
   const nPictures = files.length;
@@ -120,48 +134,77 @@ function AnalysisPreview({files, analysis}) {
   const underExposed = analysis.filter((x) => x.underExposed).length;
   const ok = analysis.filter((x) => !x.overExposed && !x.underExposed).length;
   const analyzing = nPictures - analysis.length;
-  
+
+  const filesToShow = files.filter((file) => {
+    const a = analysis?.find((a) => a.file == file);
+    if (a == undefined && filters.analyzing) return true;
+    if (a?.overExposed && filters.overExposed) return true;
+    if (a?.underExposed && filters.underExposed) return true;
+    if (a?.ok && filters.ok) return true;
+    return false;
+  });
+
   return <div className='preview'>
     <div className='tags'>
       <div className='tag all'>{nPictures} <b>All</b></div>
-      <div className='tag okey'>{ok} <b>Ok</b></div>
-      <div className='tag under-exposed'>{underExposed} <b>Under-exposed</b></div>
-      <div className='tag over-exposed'>{overExposed} <b>Over-exposed</b></div>
-      <div className='tag analyzing'>{analyzing} <b>Analysing..</b></div>
+      
+      <Tag name='okey' number={ok} onClick={() => {
+        console.log("Toggling ok tag");
+        setFilters({ ...filters, ok: !filters.ok });
+      }} enabled={filters.ok} />
+      <Tag 
+          name='under-exposed' 
+          number={underExposed} 
+          onClick={() => {
+            console.log("Toggling under-exposed tag");
+            setFilters({ ...filters, underExposed: !filters.underExposed });
+          }} 
+          enabled={filters.underExposed} />
+      <Tag 
+          name='over-exposed' 
+          number={overExposed} 
+          onClick={() => setFilters({ ...filters, overExposed: !filters.overExposed })} 
+          enabled={filters.overExposed} />
+      <Tag 
+          name='analyzing' 
+          number={analyzing} 
+          onClick={() => setFilters({ ...filters, analyzing: !filters.analyzing })} 
+          enabled={filters.analyzing} />
+
     </div>
-    <PreviewFolder files={files} analysisResults={analysis} />
+    <PreviewFolder files={filesToShow} analysisResults={analysis} />
   </div>
 }
 
-function PreviewImage({file, analysis}) {
+function PreviewImage({ file, analysis }) {
 
   let c;
   if (analysis == undefined) {
     c = "";
   } else {
     if (analysis.overExposed) { c = "overExposed"; }
-    else if (analysis.underExposed) { c = "underExposed"}
+    else if (analysis.underExposed) { c = "underExposed" }
     else { c = "ok"; }
   }
 
-  return  <li key={file.webkitRelativePath} className="imgPreview">
-            <img src={URL.createObjectURL(file)} loading="lazy" title={file.name} />
-            <div className={c}>{c}</div>
-          </li>
+  return <li key={file.webkitRelativePath} className="imgPreview">
+    <img src={URL.createObjectURL(file)} loading="lazy" title={file.name} />
+    <div className={c}>{c}</div>
+  </li>
 }
 
 function PreviewFolder({ files, analysisResults }) {
   const filesDesc = [...files]
-    .toSorted()
+    .toSorted((a, b) => b.name < a.name ? 1 : -1)
     .map((f) => {
-    if (f.name.endsWith("jpg") || f.name.endsWith("JPG")) {
+      if (f.name.endsWith("jpg") || f.name.endsWith("JPG")) {
 
-      const analysis = analysisResults.find((a) => a.file == f);
+        const analysis = analysisResults.find((a) => a.file == f);
 
-      return <PreviewImage key={f.webkitRelativePath} file={f} analysis={analysis}/>
-    }
-    return <li> {f.size}B <em>{f.webkitRelativePath}</em> </li>
-  });
+        return <PreviewImage key={f.webkitRelativePath} file={f} analysis={analysis} />
+      }
+      return <li> {f.size}B <em>{f.webkitRelativePath}</em> </li>
+    });
   return <div className="imagesGrid">{filesDesc}</div>
 }
 
@@ -173,9 +216,7 @@ function Upload({ setFiles }) {
     setFiles([...event.target.files].filter((f) => f.name.endsWith("jpg") || f.name.endsWith("JPG")));
   }
 
-
   return (<>
-
     <input
       className="upload"
       directory=""
@@ -188,14 +229,14 @@ function Upload({ setFiles }) {
 }
 
 
-function Loader({show}) {
+function Loader({ show }) {
   if (show) {
     return <div className="loader" />
   }
   return <></>
 }
 
-function AnalysisResults({analysisResults}) {
+function AnalysisResults({ analysisResults }) {
   const overExposed = analysisResults.filter((x) => x.overExposed).length;
   const underExposed = analysisResults.filter((x) => x.underExposed).length;
   const ok = analysisResults.filter((x) => !x.overExposed && !x.underExposed).length;
@@ -206,22 +247,24 @@ function AnalysisResults({analysisResults}) {
   </li>;
 }
 
-function NewUpload({setNewUpload, cancel}) {
+function NewUpload({ setNewUpload, cancel }) {
   const [files, setFiles] = useState([]);
   const [name, setName] = useState("");
 
   return <div className="floating">
-    
+
     <label className='flex flex-row items-baseline'>
       Campaign name
-      <input className='bg-white m-2' value={name} onChange={(e) => setName(e.target.value)} />
+      <input className='m-2 text-input' value={name} onChange={(e) => setName(e.target.value)} />
     </label>
 
     <div className='flex flex-row'>
-      <Upload setFiles={setFiles}/>
+      <Upload setFiles={setFiles} />
     </div>
-    <button className='cancel' onClick={cancel}>Cancel</button>
-    <button className='validate' onClick={() => {setNewUpload(UploadData.new(name, files))}} >Validate</button>
+    <div className='flex flex-row'>
+      <button className='cancel' onClick={cancel}>Cancel</button>
+      <button className='validate' onClick={() => { setNewUpload(UploadData.new(name, files)) }} >Validate</button>
+    </div>
   </div>
 }
 
@@ -234,17 +277,17 @@ async function runAnalysis(files, setMask, setAnalysisResults) {
   let analysisResults = [];
 
   const session = await ort.InferenceSession
-                          .create('/segmentation.onnx',
-                          { executionProviders: ['wasm'], graphOptimizationLevel: 'all' });
+    .create('/segmentation.onnx',
+      { executionProviders: ['wasm'], graphOptimizationLevel: 'all' });
   console.log('Inference session created');
-  
+
 
   for (const file of files) {
-    const {resized, mask} = await runSegmentation(URL.createObjectURL(file), session);
-    
+    const { resized, mask } = await runSegmentation(URL.createObjectURL(file), session);
+
     const b64 = await mask.getBase64("image/jpeg");
     setMask(b64);
-    
+
     const analysis = analysePicture(resized, mask);
     analysisResults = analysisResults.concat([new Analysis(file, analysis.overExposed, analysis.underExposed)]);
     setAnalysisResults(analysisResults);
@@ -254,26 +297,26 @@ async function runAnalysis(files, setMask, setAnalysisResults) {
 
 
 async function runSegmentation(path: string, session: ort.InferenceSession) {
-  const {resized, imageTensor: tensor} = await getImageTensorFromPath(path);
+  const { resized, imageTensor: tensor } = await getImageTensorFromPath(path);
   console.log("Tensor", tensor);
 
   // Run inference and get results.
-  var results =  await runInference(session, tensor);
+  var results = await runInference(session, tensor);
   console.log("Successfully run inference");
 
   const mask = createMask(resized, results);
   console.log("Mask:", mask);
-  return {resized, mask};
+  return { resized, mask };
 }
 
-export async function getImageTensorFromPath(path: string, dims: number[] =  [1, 3, 512, 512]) {
+export async function getImageTensorFromPath(path: string, dims: number[] = [1, 3, 512, 512]) {
   const image = await Jimp.read(path, { 'image/jpeg': { maxMemoryUsageInMB: 1024 } });
-  const resized = image.resize({w: 512, h: 512});
+  const resized = image.resize({ w: 512, h: 512 });
   console.log("Read image successfully");
 
   const imageTensor = imageDataToTensor(resized, dims);
   console.log("Tensor OK");
-  return {resized, imageTensor};
+  return { resized, imageTensor };
 }
 
 function imageDataToTensor(image: Jimp, dims: number[]): Tensor {
@@ -308,13 +351,13 @@ async function runInference(session: ort.InferenceSession, preprocessedData: any
   const start = new Date();
   const feeds: Record<string, ort.Tensor> = {};
   feeds[session.inputNames[0]] = preprocessedData;
-  
+
   const outputData = await session.run(feeds);
   const end = new Date();
-  const inferenceTime = (end.getTime() - start.getTime())/1000;
-  
+  const inferenceTime = (end.getTime() - start.getTime()) / 1000;
+
   const output = outputData[session.outputNames[0]];
-  
+
   console.log('results: ', inferenceTime, output);
   return output;
 }
@@ -326,15 +369,15 @@ function createMask(resizedImg: Jimp, output: Tensor) {
   console.log("Creating mask of", output.dims);
 
   const imageData = Buffer.alloc(width * height);
-  const outputImg = new Jimp({width, height, color: '#000000FF'});
+  const outputImg = new Jimp({ width, height, color: '#000000FF' });
 
-  for (let row=0; row < height; row++) {
-    for (let col=0; col < width; col++) {
+  for (let row = 0; row < height; row++) {
+    for (let col = 0; col < width; col++) {
       const index = row * width + col;
       // imageData[index] = Math.round(output.data[index]);
-      outputImg.bitmap.data[4*index] = output.data[index] < output.data[index + width * height] + 0.9 ? resizedImg.bitmap.data[4*index] : 0;
-      outputImg.bitmap.data[4*index + 1] = output.data[index] < output.data[index + width * height] + 0.9 ? resizedImg.bitmap.data[4*index + 1] : 0;
-      outputImg.bitmap.data[4*index + 2] = output.data[index] < output.data[index + width * height] + 0.9 ? resizedImg.bitmap.data[4*index + 2] : 0;
+      outputImg.bitmap.data[4 * index] = output.data[index] < output.data[index + width * height] + 0.9 ? resizedImg.bitmap.data[4 * index] : 0;
+      outputImg.bitmap.data[4 * index + 1] = output.data[index] < output.data[index + width * height] + 0.9 ? resizedImg.bitmap.data[4 * index + 1] : 0;
+      outputImg.bitmap.data[4 * index + 2] = output.data[index] < output.data[index + width * height] + 0.9 ? resizedImg.bitmap.data[4 * index + 2] : 0;
     }
   }
 
@@ -351,8 +394,8 @@ function analysePicture(resizedPicture, mask) {
   var count = 0;
   var overExposed = 0;
   var underExposed = 0;
-  for (let row=0; row < 512; row++) {
-    for (let col=0; col < 512; col++) {
+  for (let row = 0; row < 512; row++) {
+    for (let col = 0; col < 512; col++) {
       const index = row * 512 + col;
       if (mask.bitmap.data[4 * index] > 0) {
         count += 1;
@@ -367,10 +410,10 @@ function analysePicture(resizedPicture, mask) {
   }
   const bladeProportion = count / (512 * 512);
   console.log("Analysis", count, overExposed, underExposed);
-  if (bladeProportion < 0.01) return {underExposed: false, overExposed: false};
+  if (bladeProportion < 0.01) return { underExposed: false, overExposed: false };
   const isOverExposed = overExposed > count / 4;
   const isUnderExposed = underExposed > count / 4;
-  return {overExposed: isOverExposed, underExposed: isUnderExposed};
+  return { overExposed: isOverExposed, underExposed: isUnderExposed };
 }
 
 
