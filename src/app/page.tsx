@@ -234,7 +234,7 @@ async function runAnalysis(files, setMask, setAnalysisResults) {
   let analysisResults = [];
 
   const session = await ort.InferenceSession
-                          .create('/training-0010.onnx',
+                          .create('/segmentation.onnx',
                           { executionProviders: ['wasm'], graphOptimizationLevel: 'all' });
   console.log('Inference session created');
   
