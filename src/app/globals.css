@@ -88,16 +88,16 @@ h1 {
   background-color: #aaa7a7;
 }
 
-.tag.ok {
+.tag.okey {
   background-color: #72BD5B;
 }
 
 .tag.under-exposed {
-  background-color: #D7B94E;
+  background-color: #5660b7;
 }
 
 .tag.over-exposed {
-  background-color: #5660b7;
+  background-color: #D7B94E;
 }
 
 .tag.analyzing {
@@ -152,6 +152,7 @@ h1 {
   padding: 0 0.5em;
   font-size: 0.8rem;
   margin: 0.3em;
+  position: absolute;
 }
 
 .underExposed {
@@ -161,9 +162,10 @@ h1 {
   padding: 0 0.5em;
   font-size: 0.8rem;
   margin: 0.3em;
+  position: absolute;
 }
 
-.okey {
+.ok {
   border-radius: 3px;
   background: #69db34;
   width: fit-content;
@@ -213,4 +215,29 @@ h1 {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+.floating {
+  position: absolute;
+  width: 90vw;
+  height: 90vh;
+  margin: 5vh 5vw;
+  background-color: #d3d3d3;
+  border-radius: 1em;
+  padding: 1em;
+  z-index: 1;
+}
+
+.cancel {
+  background-color: #ce3838;
+  border-radius: 1em;
+  padding: 1em;
+  margin-right: 1em;
+}
+
+.validate {
+  background-color: #3277D8;
+  border-radius: 1em;
+  padding: 1em;
+  margin-right: 1em;
 }

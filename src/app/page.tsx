@@ -3,49 +3,102 @@
 const { Jimp } = require("jimp");
 import { Tensor } from 'onnxruntime-web';
 import * as ort from 'onnxruntime-web';
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 
 class UploadData {
   name: string;
-  numberOfPictures: number;
+  files: [File];
+  percent: number;
+  analysis?: [Analysis]
 
-  constructor(campaign: string, files: [File]) {
-    this.name = Temporal.Now.instant().toString() + + "_" + campaign;
-    this.numberOfPictures = files.length;
+  constructor(name: string, files: [File], percent: number, analysis?: [Analysis]) {
+    this.name = name;
+    this.files = files;
+    this.percent = percent;
+    this.analysis = analysis;
+  }
+
+  static new(campaign: string, files: [File]): UploadData {
+    return new UploadData(
+      Temporal.Now.instant().toString() + "_" + campaign,
+      files,
+      100
+    );
+  }
+
+  get number_pictures(): number {
+    return this.files.length;
+  }
+
+  updateAnalysis(analysis: [Analysis]): UploadData {
+    return new UploadData(this.name, this.files, this.percent, analysis);
+  }
+}
+
+class Analysis {
+  file: File;
+  overExposed: Boolean;
+  underExposed: Boolean;
+
+  constructor(file: File, overExposed: Boolean, underExposed: Boolean) {
+    this.file = file;
+    this.overExposed = overExposed;
+    this.underExposed = underExposed;
   }
 }
 
 export default function Home() {
-  const [files, setFiles] = useState([]);
   const [mask, setMask] = useState(undefined);
-  const [loading, setLoading] = useState(false);
-  const [analysisResults, setAnalysisResults] = useState([]);
+  const [uploads, setUploads] = useState([]);
+  const [showNewUpload, setShowNewUpload] = useState(false);
+
+  let uploadsView = uploads.map((u) => {
+    return <UploadRow upload={u}/>;
+  });
+  if (!uploads.length) {
+    uploadsView = <em>No uploads yet</em>;
+  }
 
   return (
     <div className='main'>
 
       <div className='top'>
         <h1 className='grow'>My uploads</h1>
-        <button className='new'>+ New</button>
+        <button className='new' onClick={() => setShowNewUpload(true)}>+ New</button>
+
+
+        {showNewUpload ? 
+        <NewUpload 
+          setNewUpload={(up) => {
+            console.log("New upload", up);
+            setUploads(uploads.concat([up]));
+            setShowNewUpload(false);
+            runAnalysis(up.files, () => {}, 
+            (res) => {
+              const newUp = up.updateAnalysis(res);
+              console.log("Setting uploads", newUp)
+              setUploads([newUp]);  // TODO only one in list
+            })
+          }} 
+          cancel={() => setShowNewUpload(false)}/> 
+          : <></>}
       </div>
-      
-      <UploadRow name='20250521_Baltic_eagle' percent={100} n_pictures={512} expand={false}/>
-      <UploadRow name='20250521_Arcadis' percent={100} n_pictures={63420} expand={false}/>
-      <UploadRow name='20250521_Arcadis' percent={43} n_pictures={2432} expand={true}/>
+
+      {uploadsView}
     </div>
   );
 }
 
-function UploadRow({name, percent, n_pictures, expand}) {
+function UploadRow({upload}: {upload: UploadData}) {
   return <div className='upload-row flex flex-col'>
     <div className='flex flex-row items-center w-full'>
-      <div className='title'>{name}</div>
-      <div className='pic'>{n_pictures} pictures</div>
-      <LoadingBar percent={percent}/>
+      <div className='title'>{upload.name}</div>
+      <div className='pic'>{upload.number_pictures} pictures</div>
+      <LoadingBar percent={upload.percent}/>
     </div>
     {
-      expand ? <AnalysisPreview n_pictures={n_pictures} /> : <></>
+      true ? <AnalysisPreview files={upload.files} analysis={upload.analysis || []} /> : <></>
     }
   </div>
 }
@@ -59,27 +112,24 @@ function LoadingBar({percent}) {
           </div>
 }
 
-function AnalysisPreview({n_pictures}) {
+function AnalysisPreview({files, analysis}) {
+  console.log("Repainting analysis", analysis);
+
+  const nPictures = files.length;
+  const overExposed = analysis.filter((x) => x.overExposed).length;
+  const underExposed = analysis.filter((x) => x.underExposed).length;
+  const ok = analysis.filter((x) => !x.overExposed && !x.underExposed).length;
+  const analyzing = nPictures - analysis.length;
+  
   return <div className='preview'>
     <div className='tags'>
-      <div className='tag all'>{n_pictures} <b>All</b></div>
-      <div className='tag ok'>1231 <b>Ok</b></div>
-      <div className='tag under-exposed'>412 <b>Under-exposed</b></div>
-      <div className='tag over-exposed'>512 <b>Over-exposed</b></div>
-      <div className='tag analyzing'>1231 <b>Analysing..</b></div>
+      <div className='tag all'>{nPictures} <b>All</b></div>
+      <div className='tag okey'>{ok} <b>Ok</b></div>
+      <div className='tag under-exposed'>{underExposed} <b>Under-exposed</b></div>
+      <div className='tag over-exposed'>{overExposed} <b>Over-exposed</b></div>
+      <div className='tag analyzing'>{analyzing} <b>Analysing..</b></div>
     </div>
-    <div className='imagesGrid'>
-      {[...Array(20)].map((x, i) =>
-    
-      <div className='img-preview' >
-        <img src='/sample.JPG' loading="lazy"  />
-            <div className='okey'>ok</div>
-            Bla.JPG
-      </div>
-    
-    )} 
-    
-    </div>
+    <PreviewFolder files={files} analysisResults={analysis} />
   </div>
 }
 
@@ -91,18 +141,18 @@ function PreviewImage({file, analysis}) {
   } else {
     if (analysis.overExposed) { c = "overExposed"; }
     else if (analysis.underExposed) { c = "underExposed"}
-    else { c = "okey"; }
+    else { c = "ok"; }
   }
 
   return  <li key={file.webkitRelativePath} className="imgPreview">
-            <img src={URL.createObjectURL(file)} loading="lazy"  />
+            <img src={URL.createObjectURL(file)} loading="lazy" title={file.name} />
             <div className={c}>{c}</div>
-            {file.name}
           </li>
 }
 
 function PreviewFolder({ files, analysisResults }) {
   const filesDesc = [...files]
+    .toSorted()
     .map((f) => {
     if (f.name.endsWith("jpg") || f.name.endsWith("JPG")) {
 
@@ -156,12 +206,30 @@ function AnalysisResults({analysisResults}) {
   </li>;
 }
 
+function NewUpload({setNewUpload, cancel}) {
+  const [files, setFiles] = useState([]);
+  const [name, setName] = useState("");
+
+  return <div className="floating">
+    
+    <label className='flex flex-row items-baseline'>
+      Campaign name
+      <input className='bg-white m-2' value={name} onChange={(e) => setName(e.target.value)} />
+    </label>
+
+    <div className='flex flex-row'>
+      <Upload setFiles={setFiles}/>
+    </div>
+    <button className='cancel' onClick={cancel}>Cancel</button>
+    <button className='validate' onClick={() => {setNewUpload(UploadData.new(name, files))}} >Validate</button>
+  </div>
+}
+
 
 //  =============================================================================
 
-async function runAnalysis(files, setMask, setLoading, setAnalysisResults) {
+async function runAnalysis(files, setMask, setAnalysisResults) {
   console.log("Running analysis on ", files[0]);
-  setLoading(true);
 
   let analysisResults = [];
 
@@ -178,11 +246,10 @@ async function runAnalysis(files, setMask, setLoading, setAnalysisResults) {
     setMask(b64);
     
     const analysis = analysePicture(resized, mask);
-    analysisResults = analysisResults.concat([{file, underExposed: analysis.underExposed, overExposed: analysis.overExposed} ]);
+    analysisResults = analysisResults.concat([new Analysis(file, analysis.overExposed, analysis.underExposed)]);
     setAnalysisResults(analysisResults);
     console.log("results", analysisResults);
   }
-  setLoading(false);
 }
 
 
@@ -292,7 +359,7 @@ function analysePicture(resizedPicture, mask) {
         const red = resizedPicture.bitmap.data[4 * index];
         const green = resizedPicture.bitmap.data[4 * index + 1];
         const blue = resizedPicture.bitmap.data[4 * index + 2];
-        const pixelValue = (red + green + blue) / 3;
+        const pixelValue = Math.max(red, green, blue);  // Take max instead of grey for colored blades
         if (pixelValue > OVEREXPOSED_THRESHOLD) { overExposed += 1; }
         if (pixelValue < UNDEREXPOSED_THRESHOLD) { underExposed += 1; }
       }
