@@ -309,7 +309,7 @@ async function runSegmentation(path: string, session: ort.InferenceSession) {
   return { resized, mask };
 }
 
-export async function getImageTensorFromPath(path: string, dims: number[] = [1, 3, 512, 512]) {
+async function getImageTensorFromPath(path: string, dims: number[] = [1, 3, 512, 512]) {
   const image = await Jimp.read(path, { 'image/jpeg': { maxMemoryUsageInMB: 1024 } });
   const resized = image.resize({ w: 512, h: 512 });
   console.log("Read image successfully");
