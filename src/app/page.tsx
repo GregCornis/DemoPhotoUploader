@@ -56,7 +56,7 @@ export default function Home() {
   const [mask, setMask] = useState(undefined);
   const [uploads, setUploads] = useState([]);
   const [showNewUpload, setShowNewUpload] = useState(false);
-  const [filters, setFilters] = useState({ ok: true, overExposed: false, underExposed: false, analyzing: false });
+  const [filters, setFilters] = useState({ ok: true, overExposed: true, underExposed: true, analyzing: true });
 
   let uploadsView = uploads.map((u) => {
     return <UploadRow upload={u} filters={filters} setFilters={setFilters} />;
