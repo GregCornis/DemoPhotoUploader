@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, ReactNode, useMemo } from "react";
+import { useState, useEffect, ReactNode, useMemo, useRef } from "react";
 import { Analysis, UploadData } from './utils'
 import { runAnalysis } from './analyser'
 
@@ -11,17 +11,22 @@ export default function Home() {
   const [showNewUpload, setShowNewUpload] = useState(false);
   const [filters, setFilters] = useState({ ok: true, overExposed: true, underExposed: true, analyzing: true });
 
-  const uploader: Worker = useMemo(
-    () => new Worker(new URL("uploader.ts", import.meta.url)),
+  const uploader = useRef<Worker>(undefined);
+  
+  useEffect(
+    () => { 
+      const worker = new Worker(new URL("uploader.ts", import.meta.url)) 
+      worker.onmessage = (e) => {
+        console.log("Receive message from worker", e.data);
+        setUploads((prev) => [prev[0].updateProgress(e.data)]);
+      };
+      uploader.current = worker;
+      return () => {
+        uploader.current?.terminate();
+      };
+    },
     []
   );
-
-  uploader.onmessage = (e) => {
-    console.log("Receive message from worker", e.data);
-
-    setUploads([uploads[0].updateProgress(e.data)]);
-
-  };
 
   let uploadsView: ReactNode = uploads.map((u) => {
     return <UploadRow upload={u} filters={filters} setFilters={setFilters} />;
@@ -42,15 +47,17 @@ export default function Home() {
           <NewUpload
             setNewUpload={(up: UploadData) => {
               console.log("New upload", up);
-              uploader.postMessage(up.files);
+              uploader.current?.postMessage(up.files);
 
               setUploads(uploads.concat([up]));
               setShowNewUpload(false);
               runAnalysis(up.files, () => { },
                 (res) => {
-                  const newUp = uploads[0].updateAnalysis(res);
-                  console.log("Setting uploads", newUp)
-                  setUploads([newUp]);  // TODO only one in list
+                  setUploads((uploads) => {
+                    const newUp = uploads[0].updateAnalysis(res);
+                    console.log("Setting uploads", newUp)
+                    return [newUp]
+                  });  // TODO only one in list
                 })
             }}
             cancel={() => setShowNewUpload(false)} />
