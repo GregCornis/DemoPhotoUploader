@@ -1,8 +1,7 @@
 'use client'
 
-import { useState, useEffect, ReactNode, useMemo, useRef } from "react";
+import { useState, useEffect, ReactNode, useMemo, useRef, ChangeEvent } from "react";
 import { Analysis, UploadData } from './utils'
-import { runAnalysis } from './analyser'
 
 
 export default function Home() {
@@ -12,10 +11,11 @@ export default function Home() {
   const [filters, setFilters] = useState({ ok: true, overExposed: true, underExposed: true, analyzing: true });
 
   const uploader = useRef<Worker>(undefined);
+  const analyser = useRef<Worker>(undefined);
   
   useEffect(
     () => { 
-      const worker = new Worker(new URL("uploader.ts", import.meta.url)) 
+      const worker = new Worker(new URL("uploader.ts", import.meta.url));
       worker.onmessage = (e) => {
         console.log("Receive message from worker", e.data);
         setUploads((prev) => [prev[0].updateProgress(e.data)]);
@@ -23,6 +23,20 @@ export default function Home() {
       uploader.current = worker;
       return () => {
         uploader.current?.terminate();
+      };
+    },
+    []
+  );
+  useEffect(
+    () => { 
+      const worker = new Worker(new URL("analyser.ts", import.meta.url));
+      worker.onmessage = (e) => {
+        console.log("Receive message from analyser", e.data);
+        setUploads((prev: UploadData[]) => [prev[0].updateAnalysis(e.data)])
+      };
+      analyser.current = worker;
+      return () => {
+        analyser.current?.terminate();
       };
     },
     []
@@ -51,14 +65,8 @@ export default function Home() {
 
               setUploads(uploads.concat([up]));
               setShowNewUpload(false);
-              runAnalysis(up.files, () => { },
-                (res) => {
-                  setUploads((uploads) => {
-                    const newUp = uploads[0].updateAnalysis(res);
-                    console.log("Setting uploads", newUp)
-                    return [newUp]
-                  });  // TODO only one in list
-                })
+              
+              analyser.current?.postMessage(up.files);
             }}
             cancel={() => setShowNewUpload(false)} />
           : <></>}
@@ -69,7 +77,7 @@ export default function Home() {
   );
 }
 
-function UploadRow({ upload, filters, setFilters }: { upload: UploadData, filters: any, setFilters: () => void }) {
+function UploadRow({ upload, filters, setFilters }: { upload: UploadData, filters: any, setFilters: (f: any) => void }) {
   return <div className='upload-row flex flex-col'>
     <div className='flex flex-row items-center w-full'>
       <div className='title'>{upload.name}</div>
@@ -150,7 +158,7 @@ function AnalysisPreview({ files, analysis, filters, setFilters }: { files: File
   </div>
 }
 
-function PreviewImage({ file, analysis }) {
+function PreviewImage({ file, analysis }: { file: File, analysis?: Analysis }) {
 
   let c;
   if (analysis == undefined) {
@@ -167,14 +175,14 @@ function PreviewImage({ file, analysis }) {
   </li>
 }
 
-function PreviewFolder({ files, analysisResults }) {
+function PreviewFolder({ files, analysisResults }: { files: File[], analysisResults: Analysis[] }) {
   const filesDesc = [...files]
     .toSorted((a, b) => b.name < a.name ? 1 : -1)
     .map((f) => {
       if (f.name.endsWith("jpg") || f.name.endsWith("JPG")) {
 
-        const analysis = analysisResults.find((a) => a.file == f);
-
+        const analysis = analysisResults.find((a) => a.file.name === f.name);
+        
         return <PreviewImage key={f.webkitRelativePath} file={f} analysis={analysis} />
       }
       return <li> {f.size}B <em>{f.webkitRelativePath}</em> </li>
@@ -182,9 +190,9 @@ function PreviewFolder({ files, analysisResults }) {
   return <div className="imagesGrid">{filesDesc}</div>
 }
 
-function Upload({ setFiles }) {
+function Upload({ setFiles }: { setFiles: ((_: File[]) => void)}) {
 
-  function selectedFolder(event) {
+  function selectedFolder(event: ChangeEvent) {
     console.log("Selected");
     console.log(event);
     setFiles([...event.target.files].filter((f) => f.name.endsWith("jpg") || f.name.endsWith("JPG")));
