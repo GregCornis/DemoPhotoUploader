@@ -250,3 +250,10 @@ h1 {
   padding: 1em;
   margin-right: 1em;
 }
+
+.login-button {
+  padding: 0.4em 1em;
+  background: #3277D8;
+  border-radius: 0.4em;
+  color: white;
+}

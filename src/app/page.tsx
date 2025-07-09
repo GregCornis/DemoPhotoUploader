@@ -51,7 +51,7 @@ export default function Home() {
 
   return (
     <div className='main'>
-
+      <a href="/login" className="login-button">Login</a>
       <div className='top'>
         <h1 className='grow'>My uploads</h1>
         <button className='new' onClick={() => setShowNewUpload(true)}>+ New</button>
@@ -76,6 +76,7 @@ export default function Home() {
     </div>
   );
 }
+
 
 function UploadRow({ upload, filters, setFilters }: { upload: UploadData, filters: any, setFilters: (f: any) => void }) {
   return <div className='upload-row flex flex-col'>
