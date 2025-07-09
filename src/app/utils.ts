@@ -1,4 +1,7 @@
-
+function getDateString() {
+  const now = new Date();
+  return `${now.getFullYear()}-${now.getMonth()}-${now.getDay()}T${now.getMinutes()}:${now.getSeconds()}.${now.getMilliseconds()}`
+}
 
 export class UploadData {
   name: string;
@@ -15,7 +18,7 @@ export class UploadData {
 
   static new(campaign: string, files: File[]): UploadData {
     return new UploadData(
-      Temporal.Now.instant().toString() + "_" + campaign,
+      getDateString() + "_" + campaign,
       files.toSorted((a, b) => b.name < a.name ? 1 : -1),
       0
     );
