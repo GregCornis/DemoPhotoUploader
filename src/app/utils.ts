@@ -52,3 +52,16 @@ export class Analysis {
     return !this.overExposed && !this.underExposed;
   }
 }
+
+
+export async function openDB() {
+  const db = await self.indexedDB.open("auth-db", 1);
+
+  return new Promise<IDBDatabase>((resolve, reject) => {
+    db.onupgradeneeded = () => {
+      const store = db.result.createObjectStore("auth");
+    };
+    db.onsuccess = () => resolve(db.result);
+    db.onerror = () => reject(db.error);
+  });
+};

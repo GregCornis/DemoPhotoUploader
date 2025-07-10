@@ -1,6 +1,43 @@
+import { S3Client, ListBucketsCommand } from "@aws-sdk/client-s3";
+import { openDB } from "./utils";
+
+
+let auth_token: string|null = null
+
+async function getAuthToken(): Promise<string> {
+    console.log("Getting token", auth_token)
+    if (auth_token != null) return auth_token;
+    
+    const db = await openDB();
+    const tx = db.transaction("auth", "readonly");
+    const store = tx.objectStore("auth");
+    const getRequest = store.get("auth_token");
+    const token = await new Promise<string>((resolve, reject) => {
+      getRequest.onsuccess = (res) => resolve(getRequest.result);
+      getRequest.onerror = (err) => reject(err);
+    });
+    console.log("Read from DB", token);
+
+    // Store locally (not very thread-safe)
+    auth_token = token;
+
+    return token;
+}
+
+
 onmessage = async (e: MessageEvent<File[]>) => {
-  console.log("Message received from main script", e.data);
-  await uploadAll(e.data)
+  console.log("Message received from main script", e.data)
+
+//   await testS3();
+    const token = await getAuthToken()
+    
+    const resp = await fetch(`${location.origin}/upload`, {
+        method: "POST",
+        body: JSON.stringify({auth_token: token})
+    })
+    console.log("Resp", resp);
+
+    await uploadAll(e.data)
 };
 
 
