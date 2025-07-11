@@ -7,14 +7,14 @@ import { openDB } from "../utils";
 
 export default function Login() {
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [accessKeyId, setAccessKeyId] = useState("");
+  const [secretAccessKey, setSecretAccessKey] = useState("");
 
   async function handleLogin(formData: FormData) {
-    const token = await login(email, password);
     const db = await openDB();
     const tx = db.transaction('auth', "readwrite");
-    tx.objectStore("auth").put(token, "auth_token");
+    tx.objectStore("auth").put(accessKeyId, "accessKeyId");
+    tx.objectStore("auth").put(secretAccessKey, "secretAccessKey");
     
     await new Promise((resolve, reject) => {
       tx.oncomplete = () => resolve(null);
@@ -22,7 +22,7 @@ export default function Login() {
       tx.onerror = (err) => reject(err);
     })
     
-    console.log("Logged in", token);
+    console.log("Logged in", accessKeyId);
     window.location.href = "/"
   };
 
@@ -32,34 +32,33 @@ export default function Login() {
         action={handleLogin}
         className="bg-white p-6 rounded-2xl shadow-md w-80 space-y-4"
       >
-        <h2 className="text-xl font-semibold text-gray-800 text-center">Login</h2>
+        <h2 className="text-xl font-semibold text-gray-800 text-center">Store access credentials</h2>
 
         <div>
-          <label htmlFor="email" className="block text-sm text-gray-600 mb-1">
-            Email
+          <label htmlFor="accessKeyId" className="block text-sm text-gray-600 mb-1">
+            Access Key ID
           </label>
           <input
-            id="email"
-            type="email"
+            id="accessKeyId"
             className="w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            placeholder=""
+            value={accessKeyId}
+            onChange={(e) => setAccessKeyId(e.target.value)}
             required
           />
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm text-gray-600 mb-1">
-            Password
+          <label htmlFor="accessKeyId" className="block text-sm text-gray-600 mb-1">
+            Secret Access Key
           </label>
           <input
-            id="password"
+            id="secretAccessKey"
             type="password"
             className="w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            value={secretAccessKey}
+            onChange={(e) => setSecretAccessKey(e.target.value)}
             required
           />
         </div>
@@ -68,7 +67,7 @@ export default function Login() {
           type="submit"
           className="w-full bg-blue-500 text-white py-2 rounded-xl hover:bg-blue-600 transition"
         >
-          Sign In
+          Save credentials
         </button>
       </form>
     </div>

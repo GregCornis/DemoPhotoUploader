@@ -1,66 +1,73 @@
-import { S3Client, ListBucketsCommand } from "@aws-sdk/client-s3";
-import { openDB } from "./utils";
+import { S3Client, ListBucketsCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
+import { openDB, getFromStore, Credentials, UploadData } from "./utils";
 
 
-let auth_token: string|null = null
+let _credentials: Credentials | null = null
 
-async function getAuthToken(): Promise<string> {
-    console.log("Getting token", auth_token)
-    if (auth_token != null) return auth_token;
-    
+async function getCredentials(): Promise<Credentials> {
+    console.log("Getting token", _credentials)
+    if (_credentials != null) return _credentials;
+
     const db = await openDB();
     const tx = db.transaction("auth", "readonly");
     const store = tx.objectStore("auth");
-    const getRequest = store.get("auth_token");
-    const token = await new Promise<string>((resolve, reject) => {
-      getRequest.onsuccess = (res) => resolve(getRequest.result);
-      getRequest.onerror = (err) => reject(err);
-    });
-    console.log("Read from DB", token);
+    const accessKeyId = await getFromStore(store, "accessKeyId")
+    const secretAccessKey = await getFromStore(store, "secretAccessKey")
+    console.log("Read from DB", accessKeyId);
 
     // Store locally (not very thread-safe)
-    auth_token = token;
+    _credentials = { accessKeyId: accessKeyId, secretAccessKey: secretAccessKey };
 
-    return token;
+    return _credentials;
 }
 
 
-onmessage = async (e: MessageEvent<File[]>) => {
-  console.log("Message received from main script", e.data)
+onmessage = async (e: MessageEvent<UploadData>) => {
+    console.log("Message received from main script", e.data)
 
-//   await testS3();
-    const token = await getAuthToken()
-    
-    const resp = await fetch(`${location.origin}/upload`, {
-        method: "POST",
-        body: JSON.stringify({auth_token: token})
-    })
-    console.log("Resp", resp);
+    const credentials = await getCredentials()
 
-    await uploadAll(e.data)
+    await uploadAll(e.data.files, credentials, e.data.name)
 };
 
 
-async function uploadAll(files: File[]) {
+async function uploadAll(files: File[], credentials: Credentials, prefix: string) {
     // Empty
     if (!files.length) {
-        postMessage(1);
-        return;
+        postMessage(1)
+        return
     }
 
-    let uploaded = 0;
+    let uploaded = 0
     files.forEach(async (f) => {
-        await upload(f);
-        uploaded += 1;
-        postMessage(100 * (uploaded + 1) / files.length);
+        await upload(f, credentials, prefix)
+        uploaded += 1
+        postMessage(100 * uploaded / files.length)
     })
 }
 
-async function upload(file: File) {
-    console.log("Uploading", file);
-    await sleep(1000);
+async function upload(file: File, credentials: Credentials, prefix: string) {
+    const reader = new FileReader()
+    const url = new URL("/upload", location.origin)
+    url.searchParams.append("path", `${prefix}/${file.webkitRelativePath}`)
+    url.searchParams.append("accessKeyId", credentials.accessKeyId)
+    url.searchParams.append("secretAccessKey", credentials.secretAccessKey)
+
+    const resp = await fetch(url, {
+        method: "POST",
+        body: file
+    })
+    console.log("Resp", resp);
 }
 
-async function sleep(milliSeconds: number) {
-    return new Promise((resolve) =>setTimeout(resolve, milliSeconds));
+async function testS3() {
+    const client = new S3Client({
+        region: "eu-west-1",
+        credentials: {
+            accessKeyId: "-",
+            secretAccessKey: "-"
+        }
+    })
+    const resp = await client.send(new ListObjectsV2Command({ Bucket: "cornis-drone-photos" }))
+    console.log("AWS resp", resp);
 }

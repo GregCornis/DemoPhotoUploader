@@ -37,6 +37,11 @@ export class UploadData {
   }
 }
 
+async function sleep(milliSeconds: number) {
+    return new Promise((resolve) => setTimeout(resolve, milliSeconds));
+}
+
+
 export class Analysis {
   file: File;
   overExposed: Boolean;
@@ -65,3 +70,17 @@ export async function openDB() {
     db.onerror = () => reject(db.error);
   });
 };
+
+export async function getFromStore(store: IDBObjectStore, key: IDBValidKey) {
+  const request = store.get(key)
+  return await new Promise<string>((resolve, reject) => {
+    request.onsuccess = (res) => resolve(request.result);
+    request.onerror = (err) => reject(err);
+  })
+}
+
+
+export interface Credentials {
+    accessKeyId: string
+    secretAccessKey: string
+}

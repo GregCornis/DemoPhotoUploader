@@ -51,17 +51,17 @@ export default function Home() {
 
   return (
     <div className='main'>
-      <a href="/login" className="login-button">Login</a>
       <div className='top'>
         <h1 className='grow'>My uploads</h1>
-        <button className='new' onClick={() => setShowNewUpload(true)}>+ New</button>
+        <a href="/login" className="login-button">Set access credentials</a>
+        <button className='new' onClick={() => setShowNewUpload(true)}>+ New upload</button>
 
 
         {showNewUpload ?
           <NewUpload
             setNewUpload={(up: UploadData) => {
               console.log("New upload", up);
-              uploader.current?.postMessage(up.files);
+              uploader.current?.postMessage(up);
 
               setUploads(uploads.concat([up]));
               setShowNewUpload(false);
