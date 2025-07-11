@@ -119,11 +119,11 @@ function AnalysisPreview({ files, analysis, filters, setFilters }: { files: File
   const analyzing = nPictures - analysis.length;
 
   const filesToShow = files.filter((file) => {
-    const a = analysis?.find((a) => a.file == file);
+    const a = analysis?.find((a) => a.file.name == file.name);
     if (a == undefined && filters.analyzing) return true;
     if (a?.overExposed && filters.overExposed) return true;
     if (a?.underExposed && filters.underExposed) return true;
-    if (a?.ok && filters.ok) return true;
+    if ((!a?.overExposed && !a?.underExposed) && filters.ok) return true;
     return false;
   });
 

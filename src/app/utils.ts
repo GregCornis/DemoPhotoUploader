@@ -52,10 +52,6 @@ export class Analysis {
     this.overExposed = overExposed;
     this.underExposed = underExposed;
   }
-
-  get ok(): Boolean {
-    return !this.overExposed && !this.underExposed;
-  }
 }
 
 
