@@ -43,10 +43,11 @@ export default function Home() {
   );
 
   let uploadsView: ReactNode = uploads.map((u) => {
-    return <UploadRow upload={u} filters={filters} setFilters={setFilters} setFold={(f) => setUploads((prev) => [prev[0].updateFolded(f)])}>
+    return <UploadRow upload={u} setFold={(f) => setUploads((prev) => [prev[0].updateFolded(f)])}>
       <AnalysisPreview files={u.files} analysis={u.analysis || []} filters={filters} setFilters={setFilters} />
     </UploadRow> 
   });
+  
   if (!uploads.length) {
     uploadsView = <em>No uploads yet</em>;
   }
@@ -80,7 +81,7 @@ export default function Home() {
 }
 
 
-function UploadRow({ upload, filters, setFilters, setFold, children }: { upload: UploadData, filters: any, setFilters: (f: any) => void, setFold: (f: boolean) => void, children: any }) {
+function UploadRow({ upload, setFold, children }: { upload: UploadData, setFold: (f: boolean) => void, children: any }) {
   return (
   <div key={upload.name} className='upload-row flex flex-col' onClick={() => setFold(!upload.fold)}>
     <div className='flex flex-row items-center w-full'>
