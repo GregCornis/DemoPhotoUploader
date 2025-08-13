@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, ReactNode, useMemo, useRef, ChangeEvent } from "react";
+import { ChevronRight, ChevronDown } from "lucide-react";
 import { Analysis, UploadData } from './utils'
-
 
 export default function Home() {
   const [mask, setMask] = useState(undefined);
@@ -43,7 +43,9 @@ export default function Home() {
   );
 
   let uploadsView: ReactNode = uploads.map((u) => {
-    return <UploadRow upload={u} filters={filters} setFilters={setFilters} />;
+    return <UploadRow upload={u} filters={filters} setFilters={setFilters} setFold={(f) => setUploads((prev) => [prev[0].updateFolded(f)])}>
+      <AnalysisPreview files={u.files} analysis={u.analysis || []} filters={filters} setFilters={setFilters} />
+    </UploadRow> 
   });
   if (!uploads.length) {
     uploadsView = <em>No uploads yet</em>;
@@ -66,7 +68,7 @@ export default function Home() {
               setUploads(uploads.concat([up]));
               setShowNewUpload(false);
               
-              analyser.current?.postMessage(up.files);
+              //analyser.current?.postMessage(up.files);
             }}
             cancel={() => setShowNewUpload(false)} />
           : <></>}
@@ -78,17 +80,20 @@ export default function Home() {
 }
 
 
-function UploadRow({ upload, filters, setFilters }: { upload: UploadData, filters: any, setFilters: (f: any) => void }) {
-  return <div className='upload-row flex flex-col'>
+function UploadRow({ upload, filters, setFilters, setFold, children }: { upload: UploadData, filters: any, setFilters: (f: any) => void, setFold: (f: boolean) => void, children: any }) {
+  return (
+  <div key={upload.name} className='upload-row flex flex-col' onClick={() => setFold(!upload.fold)}>
     <div className='flex flex-row items-center w-full'>
+      {upload.fold ? <ChevronRight /> : <ChevronDown />}
       <div className='title'>{upload.name}</div>
       <div className='pic'>{upload.number_pictures} pictures</div>
       <LoadingBar percent={upload.percent} />
     </div>
     {
-      true ? <AnalysisPreview files={upload.files} analysis={upload.analysis || []} filters={filters} setFilters={setFilters} /> : <></>
+      (!upload.fold) ? <div>{children}</div>  : <></>
     }
   </div>
+  )
 }
 
 function LoadingBar({ percent }: {percent: number}) {

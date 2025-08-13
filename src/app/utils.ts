@@ -17,12 +17,14 @@ export class UploadData {
   files: File[];
   percent: number;
   analysis?: Analysis[]
+  fold: boolean
 
-  constructor(name: string, files: File[], percent: number, analysis?: Analysis[]) {
+  constructor(name: string, files: File[], percent: number, analysis?: Analysis[], fold: boolean = true) {
     this.name = name;
     this.files = files;
     this.percent = percent;
     this.analysis = analysis;
+    this.fold = fold;
   }
 
   static new(campaign: string, files: File[]): UploadData {
@@ -44,9 +46,13 @@ export class UploadData {
   updateProgress(percent: number): UploadData {
     return new UploadData(this.name, this.files, percent, this.analysis);
   }
+
+  updateFolded(fold: boolean): UploadData {
+    return new UploadData(this.name, this.files, this.percent, this.analysis, fold);
+  }
 }
 
-async function sleep(milliSeconds: number) {
+export async function sleep(milliSeconds: number) {
     return new Promise((resolve) => setTimeout(resolve, milliSeconds));
 }
 
