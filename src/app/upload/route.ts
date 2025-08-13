@@ -42,22 +42,22 @@ export async function upload(file: ArrayBuffer, path: string, credentials: Crede
 }
 
 
-export async function testS3() {
-    const client = new S3Client({
-        region: "us-east-1",
-        credentials: {
-            accessKeyId: "-",
-            secretAccessKey: "-"
-        }
-    })
-    const resp = await client.send(new ListObjectsV2Command({ Bucket: "cornis-drone-photos" }))
-    console.log("AWS resp", resp);
+// export async function testS3() {
+//     const client = new S3Client({
+//         region: "us-east-1",
+//         credentials: {
+//             accessKeyId: "-",
+//             secretAccessKey: "-"
+//         }
+//     })
+//     const resp = await client.send(new ListObjectsV2Command({ Bucket: "cornis-drone-photos" }))
+//     console.log("AWS resp", resp);
 
-    const att = await client.send(new GetObjectAttributesCommand({
-        Bucket: "cornis-drone-photos",
-        Key: "20250516-Engie-Sud/inspection_folder_id.json",
-        ObjectAttributes: ["ETag", "Checksum", "ObjectParts", "StorageClass", "ObjectSize"]
-    }))
-    console.log("AWS att", att)
-}
+//     const att = await client.send(new GetObjectAttributesCommand({
+//         Bucket: "cornis-drone-photos",
+//         Key: "20250516-Engie-Sud/inspection_folder_id.json",
+//         ObjectAttributes: ["ETag", "Checksum", "ObjectParts", "StorageClass", "ObjectSize"]
+//     }))
+//     console.log("AWS att", att)
+// }
 

@@ -1,4 +1,4 @@
-import { S3Client, ListBucketsCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
+//import { S3Client, ListBucketsCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { openDB, getFromStore, Credentials, UploadData, sleep } from "./utils";
 
 
@@ -40,8 +40,8 @@ async function uploadAll(files: File[], credentials: Credentials, prefix: string
 
     let uploaded = 0
     files.forEach(async (f) => {
-        //await upload(f, credentials, prefix)
-        await sleep(10000);
+        await upload(f, credentials, prefix)
+        // await sleep(10000);
         console.log("Uploaded", f);
         uploaded += 1
         postMessage(100 * uploaded / files.length)
