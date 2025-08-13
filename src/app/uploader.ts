@@ -1,5 +1,5 @@
 import { S3Client, ListBucketsCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
-import { openDB, getFromStore, Credentials, UploadData } from "./utils";
+import { openDB, getFromStore, Credentials, UploadData, sleep } from "./utils";
 
 
 let _credentials: Credentials | null = null
@@ -40,7 +40,9 @@ async function uploadAll(files: File[], credentials: Credentials, prefix: string
 
     let uploaded = 0
     files.forEach(async (f) => {
-        await upload(f, credentials, prefix)
+        //await upload(f, credentials, prefix)
+        await sleep(10000);
+        console.log("Uploaded", f);
         uploaded += 1
         postMessage(100 * uploaded / files.length)
     })
@@ -58,16 +60,4 @@ async function upload(file: File, credentials: Credentials, prefix: string) {
         body: file
     })
     console.log("Resp", resp);
-}
-
-async function testS3() {
-    const client = new S3Client({
-        region: "eu-west-1",
-        credentials: {
-            accessKeyId: "-",
-            secretAccessKey: "-"
-        }
-    })
-    const resp = await client.send(new ListObjectsV2Command({ Bucket: "cornis-drone-photos" }))
-    console.log("AWS resp", resp);
 }

@@ -40,11 +40,11 @@ export class UploadData {
   }
 
   updateAnalysis(analysis: Analysis[]): UploadData {
-    return new UploadData(this.name, this.files, this.percent, analysis);
+    return new UploadData(this.name, this.files, this.percent, analysis, this.fold);
   }
 
   updateProgress(percent: number): UploadData {
-    return new UploadData(this.name, this.files, percent, this.analysis);
+    return new UploadData(this.name, this.files, percent, this.analysis, this.fold);
   }
 
   updateFolded(fold: boolean): UploadData {

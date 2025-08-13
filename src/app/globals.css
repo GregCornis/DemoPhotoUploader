@@ -27,6 +27,10 @@ h1 {
   font-size: 4em;
 }
 
+h2 {
+  font-size: 1.8em;
+}
+
 .top {
   display: flex;
   flex-direction: row;
@@ -109,17 +113,6 @@ h1 {
   margin-left: auto;
 }
 
-.img-preview {
-  display: flex;
-  flex-direction: column;
-}
-
-
-.img-preview img {
-  max-height: 8em;
-  max-width: 12em;
-}
-
 .tag.floating {
   position: absolute;
 }
@@ -149,6 +142,13 @@ h1 {
 .imgPreview img {
   max-height: 8em;
   max-width: 12em;
+  background: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 2em,
+      #000 2em,
+      #000 2.2em
+  );
 }
 
 .overExposed {
@@ -227,7 +227,7 @@ h1 {
   position: fixed;
   background-color: #f0f0f0;
   border-radius: 1em;
-  padding: 2em;
+  padding: 1em;
   z-index: 1;
   box-shadow: rgba(0, 0, 0, 0.35) 0px 2px 5px;
   top: 50%;
@@ -239,6 +239,7 @@ h1 {
   border-color: black;
   border-width: 1px;
   background-color: white;
+  flex-grow: 1;
 }
 
 .cancel {
@@ -252,7 +253,7 @@ h1 {
   background-color: #3277D8;
   border-radius: 1em;
   padding: 1em;
-  margin-right: 1em;
+  margin-left: auto;
 }
 
 .login-button {
