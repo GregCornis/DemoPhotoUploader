@@ -58,7 +58,7 @@ export function NewUpload({ setNewUpload, cancel }) {
 
     <div className='flex flex-row'>
       <button className='cancel' onClick={cancel}>Cancel</button>
-      <button className='validate' onClick={() => { setNewUpload(UploadData.new(name, files)) }} >Validate</button>
+      <button disabled={!files.length} className='validate' onClick={() => { setNewUpload(UploadData.new(name, files, shouldAnalyze, shouldUpload)) }} >Validate</button>
     </div>
   </div>
 }
