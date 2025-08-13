@@ -67,12 +67,16 @@ export default function Home() {
           <NewUpload
             setNewUpload={(up: UploadData) => {
               console.log("New upload", up);
-              uploader.current?.postMessage(up);
+              if (up.shouldUpload) {
+                uploader.current?.postMessage(up);
+              }
+
+              if (up.shouldAnalyze) {
+                analyser.current?.postMessage(up.files);
+              }
 
               setUploads(uploads.concat([up]));
               setShowNewUpload(false);
-              
-              //analyser.current?.postMessage(up.files);
             }}
             cancel={() => setShowNewUpload(false)} />
           : <></>}

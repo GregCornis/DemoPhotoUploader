@@ -18,20 +18,28 @@ export class UploadData {
   percent: number;
   analysis?: Analysis[]
   fold: boolean
+  shouldAnalyze: boolean
+  shouldUpload: boolean
 
-  constructor(name: string, files: File[], percent: number, analysis?: Analysis[], fold: boolean = true) {
+  constructor(name: string, files: File[], percent: number, analysis?: Analysis[], fold: boolean = true, shouldAnalyze: boolean = true, shouldUpload = true) {
     this.name = name;
     this.files = files;
     this.percent = percent;
     this.analysis = analysis;
     this.fold = fold;
+    this.shouldAnalyze = shouldAnalyze;
+    this.shouldUpload = shouldUpload
   }
 
-  static new(campaign: string, files: File[]): UploadData {
+  static new(campaign: string, files: File[], shouldAnalyze: boolean, shouldUpload: boolean): UploadData {
     return new UploadData(
       getDateString() + "_" + campaign,
       files.toSorted((a, b) => b.name < a.name ? 1 : -1),
-      0
+      0,
+      undefined,
+      true,
+      shouldAnalyze,
+      shouldUpload
     );
   }
 
@@ -40,15 +48,15 @@ export class UploadData {
   }
 
   updateAnalysis(analysis: Analysis[]): UploadData {
-    return new UploadData(this.name, this.files, this.percent, analysis, this.fold);
+    return new UploadData(this.name, this.files, this.percent, analysis, this.fold, this.shouldAnalyze, this.shouldUpload);
   }
 
   updateProgress(percent: number): UploadData {
-    return new UploadData(this.name, this.files, percent, this.analysis, this.fold);
+    return new UploadData(this.name, this.files, percent, this.analysis, this.fold, this.shouldAnalyze, this.shouldUpload);
   }
 
   updateFolded(fold: boolean): UploadData {
-    return new UploadData(this.name, this.files, this.percent, this.analysis, fold);
+    return new UploadData(this.name, this.files, this.percent, this.analysis, fold, this.shouldAnalyze, this.shouldUpload);
   }
 }
 
