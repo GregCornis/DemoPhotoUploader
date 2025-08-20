@@ -7,8 +7,8 @@ self.onmessage = async (e) => {
   console.log("Analyser received", e.data);
   console.log("Path", location.hostname, location.host, location.href, self.location.origin);
   ort.env.wasm.wasmPaths = `${self.location.origin}/`; //{wasm: "ort-wasm-simd-threaded.jsep.8296b855.wasm"};
-  
-  await runAnalysis(e.data, () => {}, (analysis) => { postMessage(analysis) });
+
+  await runAnalysis(e.data, () => { }, (analysis) => { postMessage(analysis) });
 }
 
 export async function runAnalysis(files: File[], setMask: (m: any) => void, setAnalysisResults: (m: Analysis[]) => void) {
@@ -20,21 +20,25 @@ export async function runAnalysis(files: File[], setMask: (m: any) => void, setA
   console.log('Inference session created');
 
   for (const file of files) {
-    const { resized, mask } = await runSegmentation(URL.createObjectURL(file), session);
+    try {
+      const { resized, mask } = await runSegmentation(URL.createObjectURL(file), session);
 
-    const b64 = await mask.getBase64("image/jpeg");
-    setMask(b64);
+      const b64 = await mask.getBase64("image/jpeg");
+      setMask(b64);
 
-    const analysis = analysePicture(resized, mask);
-    analysisResults = analysisResults.concat([new Analysis(file, analysis.overExposed, analysis.underExposed)]);
-    setAnalysisResults(analysisResults);
-    console.log("results", analysisResults);
+      const analysis = analysePicture(resized, mask);
+      analysisResults = analysisResults.concat([new Analysis(file, analysis.overExposed, analysis.underExposed)]);
+      setAnalysisResults(analysisResults);
+      console.log("results", analysisResults);
+    } catch {
+      console.log("Error running analysis on ", file);
+    }
   }
 }
 
 
-async function runSegmentation(path: string, session: ort.InferenceSession): Promise<{resized: any, mask: any}> {
-  const { resized, imageTensor: tensor }: {resized: JimpInstance, imageTensor: Tensor} = await getImageTensorFromPath(path);
+async function runSegmentation(path: string, session: ort.InferenceSession): Promise<{ resized: any, mask: any }> {
+  const { resized, imageTensor: tensor }: { resized: JimpInstance, imageTensor: Tensor } = await getImageTensorFromPath(path);
   console.log("Tensor", tensor);
 
   // Run inference and get results.
@@ -46,7 +50,7 @@ async function runSegmentation(path: string, session: ort.InferenceSession): Pro
   return { resized, mask };
 }
 
-async function getImageTensorFromPath(path: string, dims: number[] = [1, 3, 512, 512]): Promise<{resized: any, imageTensor: any}> {
+async function getImageTensorFromPath(path: string, dims: number[] = [1, 3, 512, 512]): Promise<{ resized: any, imageTensor: any }> {
   const image = await Jimp.read(path, { 'image/jpeg': { maxMemoryUsageInMB: 1024 } });
   const resized = image.resize({ w: 512, h: 512 });
   console.log("Read image successfully");
