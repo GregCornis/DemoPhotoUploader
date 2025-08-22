@@ -106,7 +106,7 @@ function UploadRow({ upload, setFold, filters, setFilters, children }: { upload:
   return (
     <div key={upload.name} className='upload-row flex flex-col'>
       <div className='flex flex-row items-center w-full'>
-        {upload.fold ? <ChevronRight /> : <ChevronDown />}
+        <Chevron fold={upload.fold} setFold={setFold} />
         <div className='title'>{upload.name}</div>
         <div className='pic grow'>{upload.number_pictures} pictures / {totalSize}</div>
         <LoadingBar percent={upload.percent} />
@@ -129,3 +129,11 @@ function LoadingBar({ percent }: { percent: number }) {
   </div>
 }
 
+function Chevron({ fold, setFold }: { fold: boolean, setFold: (f: boolean) => void }) {
+  const style = {cursor: "pointer", marginRight: "10px"}
+  return <>
+    {fold 
+      ? <ChevronRight onClick={() => setFold(false)} style={style}/> 
+      : <ChevronDown onClick={() => setFold(true)} style={style}/>}
+  </>
+}
