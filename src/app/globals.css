@@ -71,6 +71,7 @@ h2 {
   height: 4px;
   background-color: #D56D6D;
   flex-grow: 1;
+  border-radius: 5px;
 }
 
 .loading-bar .done {
