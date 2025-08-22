@@ -23,6 +23,10 @@ body {
   margin: 1em;
 }
 
+button {
+  cursor: pointer; 
+}
+
 h1 {
   font-size: 4em;
 }

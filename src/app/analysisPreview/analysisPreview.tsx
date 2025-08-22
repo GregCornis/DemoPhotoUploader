@@ -10,7 +10,7 @@ function getBlobUrl(file: File) {
     return blobUrlCache.get(file);
 }
 
-function PreviewImage({ file, analysis, style, onClick }: { file: File, analysis?: Analysis, onClick: () => void }) {
+function PreviewImage({ file, analysis, style, onClick }: { file: File, analysis?: Analysis, style: any, onClick: () => void }) {
 
     let c;
     if (analysis == undefined) {
@@ -55,8 +55,15 @@ export function PreviewFolder({ files, analysisResults }: { files: File[], analy
 
                 const analysis = analysisResults.find((a) => a.file.name === f.name);
 
-                return <PreviewImage key={f.webkitRelativePath} file={f} analysis={analysis} onClick={(e) => {
-                    e.stopPropagation(); setCurrentIndex(index)
+                return <PreviewImage 
+                key={f.webkitRelativePath} 
+                file={f} 
+                analysis={analysis} 
+                style={{cursor: "zoom-in"}}
+                onClick={(e) => {
+                    e.stopPropagation()
+                    e.preventDefault()
+                    setCurrentIndex(index)
                 }} />
             }
             return <li> {f.size}B <em>{f.webkitRelativePath}</em> </li>
@@ -80,7 +87,7 @@ export function PreviewFolder({ files, analysisResults }: { files: File[], analy
                     color: "white"
                 }}
             >
-                {/* Prev Button */}
+                
                 <button
                     onClick={showPrev}
                     style={{
@@ -96,7 +103,7 @@ export function PreviewFolder({ files, analysisResults }: { files: File[], analy
                     ‹
                 </button>
 
-                {/* The Image */}
+                
                 <PreviewImage
                     key={sortedFiles[currentIndex].webkitRelativePath}
                     file={sortedFiles[currentIndex]}
@@ -108,7 +115,7 @@ export function PreviewFolder({ files, analysisResults }: { files: File[], analy
                     style={{ maxWidth: "90%", maxHeight: "90%" }}
                 />
 
-                {/* Next Button */}
+                
                 <button
                     onClick={showNext}
                     style={{
