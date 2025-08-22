@@ -10,8 +10,7 @@ function getBlobUrl(file: File) {
     return blobUrlCache.get(file);
 }
 
-function PreviewImage({ file, analysis, style, onClick }: { file: File, analysis?: Analysis, style: any, onClick: () => void }) {
-
+function PreviewImage({ file, analysis, style, onClick }: { file: File, analysis?: Analysis, style: any, onClick: React.MouseEventHandler<HTMLImageElement> }) {
     let c;
     if (analysis == undefined) {
         c = "";
@@ -34,7 +33,8 @@ export function PreviewFolder({ files, analysisResults }: { files: File[], analy
         .toSorted((a, b) => b.name < a.name ? 1 : -1)
 
 
-    const closeImage = () => {
+    const closeImage = (e) => {
+        e.stopPropagation(); 
         setCurrentIndex(null);
     };
 
@@ -62,7 +62,6 @@ export function PreviewFolder({ files, analysisResults }: { files: File[], analy
                 style={{cursor: "zoom-in"}}
                 onClick={(e) => {
                     e.stopPropagation()
-                    e.preventDefault()
                     setCurrentIndex(index)
                 }} />
             }
@@ -140,7 +139,7 @@ function Tag({ name, number, onClick, enabled }: { name: string, number: number,
     const enabledClass = enabled ? '' : 'disabled';
     return <div
         className={'tag ' + name + ' ' + enabledClass}
-        onClick={onClick}>
+        onClick={(e) => {e.stopPropagation(); onClick(); }} >
         {number} <b>{name}</b>
     </div>
 }
