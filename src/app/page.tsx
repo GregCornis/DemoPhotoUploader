@@ -43,8 +43,8 @@ export default function Home() {
     []
   );
 
-  let uploadsView: ReactNode = uploads.map((u, row) => {
-    return <UploadRow
+  let uploadsView: ReactNode = uploads.map((u, row) => 
+    <UploadRow
       key={u.name}
       upload={u}
       filters={filters}
@@ -55,7 +55,7 @@ export default function Home() {
       }))}>
       <AnalysisPreview files={u.files} analysis={u.analysis || []} filters={filters} />
     </UploadRow>
-  });
+  );
 
   if (!uploads.length) {
     uploadsView = <em>No uploads yet</em>;
