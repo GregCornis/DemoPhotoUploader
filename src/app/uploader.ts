@@ -28,8 +28,9 @@ onmessage = async (e: MessageEvent<UploadData>) => {
 
     const credentials = await getCredentials()
     console.log("Credentials:", credentials);
+    console.log("Subfolder", e.data.subfolder);
 
-    await uploadAll(e.data.files, credentials, e.data.name)
+    await uploadAll(e.data.files, credentials, e.data.subfolder + e.data.name)
 };
 
 
@@ -60,12 +61,12 @@ async function uploadAll(files: File[], credentials: Credentials, prefix: string
 
 
 async function upload(file: File, prefix: string, client: S3Client) {
-    console.log("Uploading", file.name);
     const path = encodeURI(`${prefix}/${file.webkitRelativePath}`);
+    console.log("Uploading", file.name, path);
 
     const command = new PutObjectCommand({
         Bucket: "cornis-drone-photos",
-        Key: `test/${path}`
+        Key: path
     })
 
     const url = await getSignedUrl(client, command, { expiresIn: 3600 });
