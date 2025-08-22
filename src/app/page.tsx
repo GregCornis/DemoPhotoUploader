@@ -7,7 +7,6 @@ import { AnalysisPreview, PreviewFolder } from "./analysisPreview/analysisPrevie
 import { NewUpload } from "./NewUpload";
 
 export default function Home() {
-  const [mask, setMask] = useState(undefined);
   const [uploads, setUploads] = useState<UploadData[]>([]);
   const [showNewUpload, setShowNewUpload] = useState(false);
   const [filters, setFilters] = useState({ ok: true, overExposed: true, underExposed: true, analyzing: true });
@@ -20,7 +19,7 @@ export default function Home() {
       const worker = new Worker(new URL("uploader.ts", import.meta.url));
       worker.onmessage = (e) => {
         console.log("Receive message from worker", e.data);
-        setUploads((prev) => [prev[0].updateProgress(e.data)]);
+        setUploads((prev) => [prev[0].updateProgress(e.data), ...prev.slice(1)]);
       };
       uploader.current = worker;
       return () => {
@@ -34,7 +33,7 @@ export default function Home() {
       const worker = new Worker(new URL("analyser.ts", import.meta.url));
       worker.onmessage = (e) => {
         console.log("Receive message from analyser", e.data);
-        setUploads((prev: UploadData[]) => [prev[0].updateAnalysis(e.data)])
+        setUploads((prev: UploadData[]) => [prev[0].updateAnalysis(e.data), ...prev.slice(1)])
       };
       analyser.current = worker;
       return () => {
@@ -44,8 +43,11 @@ export default function Home() {
     []
   );
 
-  let uploadsView: ReactNode = uploads.map((u) => {
-    return <UploadRow key={u.name} upload={u} setFold={(f) => setUploads((prev) => [prev[0].updateFolded(f)])}>
+  let uploadsView: ReactNode = uploads.map((u, row) => {
+    return <UploadRow key={u.name} upload={u} setFold={(f) => setUploads((prev) => prev.map((up, index) => {
+      if (index == row) return up.updateFolded(f)
+      else return up
+    }))}>
       <AnalysisPreview files={u.files} analysis={u.analysis || []} filters={filters} setFilters={setFilters} />
     </UploadRow> 
   });
