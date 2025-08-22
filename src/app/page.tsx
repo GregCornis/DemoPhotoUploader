@@ -2,9 +2,10 @@
 
 import { useState, useEffect, ReactNode, useMemo, useRef, ChangeEvent } from "react";
 import { ChevronRight, ChevronDown, UploadCloud } from "lucide-react";
-import { Analysis, readableFileSize, UploadData } from './utils'
-import { AnalysisPreview, PreviewFolder, TagRow } from "./analysisPreview/analysisPreview";
+import { readableFileSize, UploadData } from './utils'
+import { AnalysisPreview, TagRow } from "./analysisPreview/analysisPreview";
 import { NewUpload } from "./NewUpload";
+import { useToast } from "./ToastContext";
 
 export default function Home() {
   const [uploads, setUploads] = useState<UploadData[]>([]);
@@ -13,14 +14,24 @@ export default function Home() {
 
   const uploader = useRef<Worker>(undefined);
   const analyser = useRef<Worker>(undefined);
+  const { showToast } = useToast();
 
   useEffect(
     () => {
       const worker = new Worker(new URL("uploader.ts", import.meta.url));
       worker.onmessage = (e) => {
         console.log("Receive message from worker", e.data);
-        setUploads((prev) => [prev[0].updateProgress(e.data), ...prev.slice(1)]);
+        const {type, content} = e.data;
+        if (type === "error") {
+          showToast("Error during upload: " + content)
+        } else {
+          setUploads((prev) => [prev[0].updateProgress(e.data), ...prev.slice(1)]);
+        }
       };
+      worker.onerror = (e) => {
+        console.log("Received error: ", e)
+        showToast("Error during upload: " + e.message)
+      }
       uploader.current = worker;
       return () => {
         uploader.current?.terminate();
@@ -32,9 +43,18 @@ export default function Home() {
     () => {
       const worker = new Worker(new URL("analyser.ts", import.meta.url));
       worker.onmessage = (e) => {
+        const {type, content} = e.data
         console.log("Receive message from analyser", e.data);
-        setUploads((prev: UploadData[]) => [prev[0].updateAnalysis(e.data), ...prev.slice(1)])
+        if (type === "error") {
+          showToast("Error during analysis: " + content)
+        } else {
+          setUploads((prev: UploadData[]) => [prev[0].updateAnalysis(e.data), ...prev.slice(1)])
+        }
       };
+      worker.onerror = (e) => {
+        console.log("Received error: ", e)
+        showToast("Error during analysis: " + e.message)
+      }
       analyser.current = worker;
       return () => {
         analyser.current?.terminate();
@@ -82,8 +102,8 @@ export default function Home() {
                 analyser.current?.postMessage(up.files);
               }
 
-              setUploads([up, ...uploads]);
-              setShowNewUpload(false);
+              setUploads([up, ...uploads])
+              setShowNewUpload(false)
             }}
             cancel={() => setShowNewUpload(false)} />
           : <></>}

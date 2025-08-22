@@ -26,18 +26,22 @@ async function getCredentials(): Promise<Credentials> {
 onmessage = async (e: MessageEvent<UploadData>) => {
     console.log("Message received from main script", e.data)
 
-    const credentials = await getCredentials()
-    console.log("Credentials:", credentials);
-    console.log("Subfolder", e.data.subfolder);
+    try {
+        const credentials = await getCredentials()
+        console.log("Credentials:", credentials);
+        console.log("Subfolder", e.data.subfolder);
 
-    await uploadAll(e.data.files, credentials, e.data.subfolder + e.data.name)
+        await uploadAll(e.data.files, credentials, e.data.subfolder + e.data.name)
+    } catch (err) {
+        postMessage({ type: "error", content: err.message ?? "" })
+    }
 };
 
 
 async function uploadAll(files: File[], credentials: Credentials, prefix: string) {
     // Empty
     if (!files.length) {
-        postMessage(1)
+        postMessage({ type: "success", content: 1 })
         return
     }
 
@@ -50,13 +54,13 @@ async function uploadAll(files: File[], credentials: Credentials, prefix: string
     })
 
     let uploaded = 0
-    files.forEach(async (f) => {
+    await Promise.all(files.map(async (f) => {
         await upload(f, prefix, client)
         // await sleep(10000);
         console.log("Uploaded", f);
         uploaded += 1
-        postMessage(100 * uploaded / files.length)
-    })
+        postMessage({ type: "success", content: 100 * uploaded / files.length })
+    }))
 }
 
 
@@ -78,5 +82,9 @@ async function upload(file: File, prefix: string, client: S3Client) {
         body: file
     })
     console.log("Created file", resp)
+    if (!resp.ok) {
+        const msg = await resp.text()
+        throw Error(`Failed to upload: ${resp.status} - ${msg}`)
+    }
 }
 

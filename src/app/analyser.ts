@@ -8,7 +8,11 @@ self.onmessage = async (e) => {
   console.log("Path", location.hostname, location.host, location.href, self.location.origin);
   ort.env.wasm.wasmPaths = `${self.location.origin}/`; //{wasm: "ort-wasm-simd-threaded.jsep.8296b855.wasm"};
 
-  await runAnalysis(e.data, () => { }, (analysis) => { postMessage(analysis) });
+  try {
+      await runAnalysis(e.data, () => { }, (analysis) => { postMessage({type: "success", content: analysis}) });
+  } catch (err) {
+    postMessage({type:"error", content: err.message ?? ""})
+  }
 }
 
 export async function runAnalysis(files: File[], setMask: (m: any) => void, setAnalysisResults: (m: Analysis[]) => void) {
