@@ -146,15 +146,10 @@ function Tag({ name, number, onClick, enabled }: { name: string, number: number,
 }
 
 
-export function AnalysisPreview({ files, analysis, filters, setFilters }: { files: File[], analysis: Analysis[], filters: any, setFilters: (f: any) => void }) {
+export function AnalysisPreview({ files, analysis, filters }: { files: File[], analysis: Analysis[], filters: any}) {
     console.log("Repainting analysis", analysis);
 
-    const nPictures = files.length;
-    const overExposed = analysis.filter((x) => x.overExposed).length;
-    const underExposed = analysis.filter((x) => x.underExposed).length;
-    const ok = analysis.filter((x) => !x.overExposed && !x.underExposed).length;
-    const analyzing = nPictures - analysis.length;
-
+    
     const filesToShow = files.filter((file) => {
         const a = analysis?.find((a) => a.file.name == file.name);
         if (a == undefined && filters.analyzing) return true;
@@ -165,7 +160,12 @@ export function AnalysisPreview({ files, analysis, filters, setFilters }: { file
     });
 
     return <div className='preview'>
-        <div className='tags'>
+        <PreviewFolder files={filesToShow} analysisResults={analysis} />
+    </div>
+}
+
+export function TagRow({nPictures, ok, overExposed, underExposed, analyzing, filters, setFilters}) {
+    return <div className='tags'>
             <div className='tag all'>{nPictures} <b>All</b></div>
 
             <Tag name='okey' number={ok} onClick={() => {
@@ -192,6 +192,4 @@ export function AnalysisPreview({ files, analysis, filters, setFilters }: { file
                 enabled={filters.analyzing} />
 
         </div>
-        <PreviewFolder files={filesToShow} analysisResults={analysis} />
-    </div>
 }

@@ -55,7 +55,7 @@ h2 {
   margin: 1em;
   box-shadow: rgba(0, 0, 0, 0.35) 0px 2px 5px;
   display: flex;
-  align-items: center;
+  align-items: stretch;
 }
 
 .upload-row .title {
