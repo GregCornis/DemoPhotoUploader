@@ -64,13 +64,13 @@ h2 {
 }
 
 .upload-row .pic {
-  width: 20%;
+  padding-left: 2em;
 }
 
 .loading-bar {
   height: 4px;
   background-color: #D56D6D;
-  flex-grow: 1;
+  width: 20%;
   border-radius: 5px;
 }
 

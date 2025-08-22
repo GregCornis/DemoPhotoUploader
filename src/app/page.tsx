@@ -2,7 +2,7 @@
 
 import { useState, useEffect, ReactNode, useMemo, useRef, ChangeEvent } from "react";
 import { ChevronRight, ChevronDown, UploadCloud } from "lucide-react";
-import { Analysis, UploadData } from './utils'
+import { Analysis, readableFileSize, UploadData } from './utils'
 import { AnalysisPreview, PreviewFolder, TagRow } from "./analysisPreview/analysisPreview";
 import { NewUpload } from "./NewUpload";
 
@@ -101,13 +101,14 @@ function UploadRow({ upload, setFold, filters, setFilters, children }: { upload:
   const underExposed = upload.analysis?.filter((x) => x.underExposed).length ?? 0;
   const ok = upload.analysis?.filter((x) => !x.overExposed && !x.underExposed).length ?? 0;
   const analyzing = nPictures - (upload.analysis?.length ?? 0);
+  const totalSize = readableFileSize(upload.files.reduce((a, b) => a + b.size, 0))
 
   return (
-    <div key={upload.name} className='upload-row flex flex-col' onClick={() => setFold(!upload.fold)}>
+    <div key={upload.name} className='upload-row flex flex-col'>
       <div className='flex flex-row items-center w-full'>
         {upload.fold ? <ChevronRight /> : <ChevronDown />}
         <div className='title'>{upload.name}</div>
-        <div className='pic'>{upload.number_pictures} pictures</div>
+        <div className='pic grow'>{upload.number_pictures} pictures / {totalSize}</div>
         <LoadingBar percent={upload.percent} />
       </div>
       <TagRow nPictures={nPictures} ok={ok} overExposed={overExposed} underExposed={underExposed} analyzing={analyzing} filters={filters} setFilters={setFilters} />
@@ -120,8 +121,8 @@ function UploadRow({ upload, setFold, filters, setFilters, children }: { upload:
 }
 
 function LoadingBar({ percent }: { percent: number }) {
-  return <div className='flex flex-row items-center grow'>
-    <div className='loading-bar'>
+  return <div className='flex flex-row items-center' style={{ width: "20%" }}>
+    <div className='loading-bar grow'>
       <div className='done' style={{ width: percent + '%' }} />
     </div>
     <div className='m-2' >{Math.round(percent)} %</div>
