@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { Analysis } from "../utils";
 
-const blobUrlCache = new WeakMap();
+const blobUrlCache = new Map();
 
 function getBlobUrl(file: File) {
-    if (!blobUrlCache.has(file)) {
-        blobUrlCache.set(file, URL.createObjectURL(file));
+    if (!blobUrlCache.has(file.name)) {
+        blobUrlCache.set(file.name, URL.createObjectURL(file));
     }
-    return blobUrlCache.get(file);
+    return blobUrlCache.get(file.name);
 }
 
 function PreviewImage({ file, analysis, style, onClick }: { file: File, analysis?: Analysis, style: any, onClick: React.MouseEventHandler<HTMLImageElement> }) {
